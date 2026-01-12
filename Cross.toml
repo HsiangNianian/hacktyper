@@ -9,3 +9,5 @@ pre-build = [
     "dpkg --add-architecture armhf",
     "apt-get update && apt-get install --assume-yes libasound2-dev:armhf"
 ]
+env.PKG_CONFIG_PATH = "/usr/lib/arm-linux-gnueabihf/pkgconfig/"
+
