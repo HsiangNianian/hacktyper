@@ -1,0 +1,23 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [v0.2.2] - 2026-01-12
+### New Features
+- [`047afc4`](https://github.com/HsiangNianian/hacktyper/commit/047afc4c17b80f8c691789e0a272892e4b14b2ff) - bump version to 0.2.2 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`3cc7523`](https://github.com/HsiangNianian/hacktyper/commit/3cc75233d4a143f82c7921cc8b4b5d5279cb18bf) - enhance release workflow with multi-target builds for Linux, macOS, and Windows *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`3651cd0`](https://github.com/HsiangNianian/hacktyper/commit/3651cd057013a58026823ce93d549cb3a5cd931d) - add pre-build configurations for aarch64 and armv7 targets in Cross.toml *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+### Bug Fixes
+- [`2343224`](https://github.com/HsiangNianian/hacktyper/commit/234322446e0f6cea2d5335630f8b1d1a54296b94) - update branch references from main to master in release workflow *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`5a71345`](https://github.com/HsiangNianian/hacktyper/commit/5a713458c1721dc91955b5e4a03ed9ecbeaac424) - update output paths for Debian and RPM builds in release workflow *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`7fa1fbf`](https://github.com/HsiangNianian/hacktyper/commit/7fa1fbf12890b1166b94890f67a6217f40ca858c) - specify target in cargo build command for Linux host *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`c7f0efa`](https://github.com/HsiangNianian/hacktyper/commit/c7f0efa5cbc314bd95b0b696921e0531b4510f78) - add PKG_CONFIG_PATH for armv7 target in Cross.toml *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`f6d2260`](https://github.com/HsiangNianian/hacktyper/commit/f6d226008fb82ee504f965d862205c54a9a7ca3f) - update Deb packaging step to handle cross-compilation for non-x86_64 targets *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`31ae16a`](https://github.com/HsiangNianian/hacktyper/commit/31ae16ac7a984b10a983238780fcddaf6ba933d1) - update release notes formatting for clarity *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`3f84b94`](https://github.com/HsiangNianian/hacktyper/commit/3f84b9484755533ca8e903135841acd4d9784e7f) - use manual dependencies for deb package to avoid dpkg-shlibdeps error on cross-compilation *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`26e26aa`](https://github.com/HsiangNianian/hacktyper/commit/26e26aacef4ace3cbc8ea5b50a89b6494727dd96) - remove invalid --deb-version argument with v-prefix in release workflow *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+[v0.2.2]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.1...v0.2.2
