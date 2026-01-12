@@ -73,7 +73,7 @@ jobs:
             cargo deb --no-build --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb
           else
             # For cross-compilation, skip strip and system dependency check to avoid errors on x86 host
-            cargo deb --no-build --no-strip --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb --deb-version ${{ github.ref_name }} --fast
+            cargo deb --no-build --no-strip --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb --fast
           fi
 
       - name: Build RPM (via Alien)
