@@ -242,22 +242,22 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
         // Event Handling (Typing)
         if event::poll(Duration::from_millis(30))?
             && let Event::Key(key) = event::read()?
-                && key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Esc => break,
-                        _ => {
-                            if enable_sound
-                                && let Some(ref stream) = stream_opt {
-                                    play_type_sound(stream.mixer());
-                                }
-                            // Typing adds more rain intensity?
-                            if rng.random_bool(0.5) {
-                                let c = rng.random_range(0..cols);
-                                streams.push(create_stream(c, rows, &mut rng, &standard_chars));
-                            }
-                        }
+            && key.kind == KeyEventKind::Press
+        {
+            match key.code {
+                KeyCode::Esc => break,
+                _ => {
+                    if enable_sound && let Some(ref stream) = stream_opt {
+                        play_type_sound(stream.mixer());
+                    }
+                    // Typing adds more rain intensity?
+                    if rng.random_bool(0.5) {
+                        let c = rng.random_range(0..cols);
+                        streams.push(create_stream(c, rows, &mut rng, &standard_chars));
                     }
                 }
+            }
+        }
 
         // Update & Render
         // We only draw updates to minimize IO
@@ -390,37 +390,37 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
     loop {
         if event::poll(Duration::from_millis(50))?
             && let Event::Key(key) = event::read()?
-                && key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Esc => break,
-                        _ => {
-                            if enable_sound
-                                && let Some(ref stream) = stream_opt {
-                                    play_type_sound(stream.mixer());
-                                }
+            && key.kind == KeyEventKind::Press
+        {
+            match key.code {
+                KeyCode::Esc => break,
+                _ => {
+                    if enable_sound && let Some(ref stream) = stream_opt {
+                        play_type_sound(stream.mixer());
+                    }
 
-                            let end = (index + chunk_size).min(max_len);
-                            if index < max_len {
-                                for i in index..end {
-                                    let sc = &content[i];
-                                    if sc.char == '\r' || sc.char == '\n' {
-                                        print!("{}", sc.char);
-                                    } else {
-                                        print!("{}", sc.char.with(sc.color));
-                                    }
-                                }
-                                stdout.flush()?;
-
-                                index = end;
+                    let end = (index + chunk_size).min(max_len);
+                    if index < max_len {
+                        for i in index..end {
+                            let sc = &content[i];
+                            if sc.char == '\r' || sc.char == '\n' {
+                                print!("{}", sc.char);
                             } else {
-                                // Loop back to start if finished
-                                index = 0;
-                                stdout.execute(terminal::Clear(ClearType::All))?;
-                                stdout.execute(cursor::MoveTo(0, 0))?;
+                                print!("{}", sc.char.with(sc.color));
                             }
                         }
+                        stdout.flush()?;
+
+                        index = end;
+                    } else {
+                        // Loop back to start if finished
+                        index = 0;
+                        stdout.execute(terminal::Clear(ClearType::All))?;
+                        stdout.execute(cursor::MoveTo(0, 0))?;
                     }
                 }
+            }
+        }
     }
 
     // Cleanup
