@@ -11,7 +11,17 @@ A sophisticated CLI tool for pranking or acting like a Hollywood hacker.
 
 ## Installation
 
+1. From crates.io
+
 ```bash
+cargo install hacktyper
+```
+
+2. From source code
+
+```bash
+git clone https://github.com/HsiangNianian/hacktyper
+cd hacktyper
 cargo build --release
 ```
 
@@ -50,3 +60,4 @@ The binary will be in `target/release/hacktyper`.
 - `--sound`: Boolean flag to enable/disable sound (default: true).
 - `--multi-window`: Spawns multiple terminals.
 - `--window-count <NUM>`: Number of terminals to spawn.
+- `-m, --matrix`: Enable matrix effect.
