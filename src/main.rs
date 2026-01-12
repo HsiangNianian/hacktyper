@@ -3,7 +3,7 @@ use clap::Parser;
 use crossterm::{
     ExecutableCommand, cursor,
     event::{self, Event, KeyCode, KeyEventKind},
-    style::{self, Color, Stylize},
+    style::{Color, Stylize},
     terminal::{self, ClearType},
 };
 use lazy_static::lazy_static;
@@ -240,17 +240,16 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
 
     loop {
         // Event Handling (Typing)
-        if event::poll(Duration::from_millis(30))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
+        if event::poll(Duration::from_millis(30))?
+            && let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Esc => break,
                         _ => {
-                            if enable_sound {
-                                if let Some(ref stream) = stream_opt {
+                            if enable_sound
+                                && let Some(ref stream) = stream_opt {
                                     play_type_sound(stream.mixer());
                                 }
-                            }
                             // Typing adds more rain intensity?
                             if rng.random_bool(0.5) {
                                 let c = rng.random_range(0..cols);
@@ -259,8 +258,6 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
                         }
                     }
                 }
-            }
-        }
 
         // Update & Render
         // We only draw updates to minimize IO
@@ -391,17 +388,16 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
     let max_len = content.len();
 
     loop {
-        if event::poll(Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
+        if event::poll(Duration::from_millis(50))?
+            && let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Esc => break,
                         _ => {
-                            if enable_sound {
-                                if let Some(ref stream) = stream_opt {
+                            if enable_sound
+                                && let Some(ref stream) = stream_opt {
                                     play_type_sound(stream.mixer());
                                 }
-                            }
 
                             let end = (index + chunk_size).min(max_len);
                             if index < max_len {
@@ -425,8 +421,6 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
                         }
                     }
                 }
-            }
-        }
     }
 
     // Cleanup
