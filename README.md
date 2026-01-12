@@ -1,4 +1,4 @@
-# Hacker Typer (Rust Edition)
+# Hacker Typer
 
 A sophisticated CLI tool for pranking or acting like a Hollywood hacker.
 
@@ -20,21 +20,25 @@ The binary will be in `target/release/hacktyper`.
 ## Usage
 
 ### Basic usage (Matrix Mode)
+
 ```bash
 ./hacktyper
 ```
 
 ### Type out a custom file (e.g., Harry Potter)
+
 ```bash
 ./hacktyper --file harry_potter.txt
 ```
 
 ### Hollywood Mode (Spawn 4 extra windows)
+
 ```bash
 ./hacktyper --multi-window --window-count 4
 ```
 
 ### Adjust Speed
+
 ```bash
 ./hacktyper --speed 5
 ```
