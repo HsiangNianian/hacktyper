@@ -1,6 +1,6 @@
 [package]
 name = "hacktyper"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 authors = ["HsiangNianian"]
 description = "A terminal-based typing simulator that mimics hacking scenes from movies."
