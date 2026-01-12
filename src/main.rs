@@ -6,9 +6,7 @@ use crossterm::{
     style::{Color, Stylize},
     terminal::{self, ClearType},
 };
-use lazy_static::lazy_static;
 use rand::Rng; // Re-add Rand
-use regex::Regex;
 use rodio::{
     OutputStreamBuilder,
     source::{Pink, SineWave, Source},
@@ -18,6 +16,10 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
+use syntect::easy::HighlightLines;
+use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{ThemeSet, Style};
+use syntect::util::LinesWithEndings;
 
 /// Hacker Typer: Ultimate Pranking Tool
 #[derive(Parser, Debug)]
@@ -93,11 +95,18 @@ fn main() -> Result<()> {
         // After spawning others, run in the current window too
     }
 
-    let code = match args.file {
-        Some(path) => fs::read_to_string(&path)
-            .with_context(|| format!("Failed to read file: {:?}", path))
-            .unwrap_or_else(|_| DEFAULT_CODE.to_string()),
-        None => DEFAULT_CODE.to_string(),
+    let (code, extension) = match args.file {
+        Some(path) => {
+            let ext = path.extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("rs")
+                .to_string();
+            let content = fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read file: {:?}", path))
+                .unwrap_or_else(|_| DEFAULT_CODE.to_string());
+            (content, ext)
+        },
+        None => (DEFAULT_CODE.to_string(), "rs".to_string()),
     };
 
     // Infinite loop of the code logic to prevent running out
@@ -107,7 +116,7 @@ fn main() -> Result<()> {
         run_matrix(args.sound)?;
     } else {
         // Pre-process content for highlighting and formatting
-        let styled_content = highlight_code(&full_code);
+        let styled_content = highlight_code(&full_code, &extension);
         run_ui(&styled_content, args.speed, args.sound)?;
     }
 
@@ -119,80 +128,47 @@ struct StyledChar {
     color: Color,
 }
 
-fn highlight_code(code: &str) -> Vec<StyledChar> {
-    lazy_static! {
-        static ref RE_COMMENT: Regex = Regex::new(r"//.*").unwrap();
-        static ref RE_STRING: Regex = Regex::new(r#""[^"]*""#).unwrap();
-        static ref RE_KEYWORD: Regex = Regex::new(r"\b(fn|let|mut|if|else|for|while|loop|match|return|use|mod|struct|impl|pub|unsafe|crate|self|super|where|break|continue|as|const|static|trait|enum|type)\b").unwrap();
-        static ref RE_TYPE: Regex = Regex::new(r"\b[A-Z][a-zA-Z0-9_]*\b").unwrap();
-        static ref RE_NUMBER: Regex = Regex::new(r"\b\d+(_\d+)*(\.\d+)?\b").unwrap();
-    }
+fn highlight_code(code: &str, extension: &str) -> Vec<StyledChar> {
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
 
+    // Try to find a nice dark theme
+    let theme = ts.themes.get("base16-ocean.dark")
+        .or_else(|| ts.themes.get("base16-mocha.dark"))
+        .unwrap_or_else(|| ts.themes.values().next().unwrap());
+
+    let syntax = ps.find_syntax_by_extension(extension)
+        .or_else(|| ps.find_syntax_by_first_line(code))
+        .unwrap_or_else(|| ps.find_syntax_plain_text());
+
+    let mut h = HighlightLines::new(syntax, theme);
     let mut result = Vec::with_capacity(code.len());
 
-    // We process the code line by line to safely handle comments and newlines
-    for line in code.lines() {
-        let line_len = line.len();
-
-        // This is a naive 'painter' approach: buffer the chars with default color, then overwrite colors.
-        let mut line_colors = vec![Color::Green; line_len];
-
-        // 1. Strings
-        for cap in RE_STRING.find_iter(line) {
-            for i in cap.start()..cap.end() {
-                line_colors[i] = Color::Yellow;
-            }
-        }
-
-        // 2. Keywords
-        for cap in RE_KEYWORD.find_iter(line) {
-            for i in cap.start()..cap.end() {
-                if line_colors[i] == Color::Green {
-                    line_colors[i] = Color::Magenta;
+    for line in LinesWithEndings::from(code) {
+        let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap_or_default();
+        
+        for (style, text) in ranges {
+            let fg = style.foreground;
+            let color = Color::Rgb { r: fg.r, g: fg.g, b: fg.b };
+            
+            for c in text.chars() {
+                match c {
+                    '\n' => {
+                        result.push(StyledChar { char: '\r', color: Color::Reset });
+                        result.push(StyledChar { char: '\n', color: Color::Reset });
+                    }
+                    '\r' => { /* Skip, handled by \n */ }
+                    '\t' => {
+                        for _ in 0..4 {
+                            result.push(StyledChar { char: ' ', color });
+                        }
+                    }
+                    _ => {
+                        result.push(StyledChar { char: c, color });
+                    }
                 }
             }
         }
-
-        for cap in RE_TYPE.find_iter(line) {
-            for i in cap.start()..cap.end() {
-                if line_colors[i] == Color::Green {
-                    line_colors[i] = Color::Cyan;
-                }
-            }
-        }
-
-        for cap in RE_NUMBER.find_iter(line) {
-            for i in cap.start()..cap.end() {
-                if line_colors[i] == Color::Green {
-                    line_colors[i] = Color::Red;
-                }
-            }
-        }
-
-        // 3. Comments (override everything)
-        if let Some(mat) = RE_COMMENT.find(line) {
-            for i in mat.start()..mat.end() {
-                line_colors[i] = Color::DarkGrey;
-            }
-        }
-
-        // Convert to StyledChar
-        for (i, c) in line.chars().enumerate() {
-            result.push(StyledChar {
-                char: c,
-                color: line_colors[i],
-            });
-        }
-
-        // Handle Newline: In raw mode, we need \r\n
-        result.push(StyledChar {
-            char: '\r',
-            color: Color::Reset,
-        });
-        result.push(StyledChar {
-            char: '\n',
-            color: Color::Reset,
-        });
     }
 
     result
@@ -380,7 +356,8 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     stdout.execute(terminal::EnterAlternateScreen)?;
-    stdout.execute(cursor::Hide)?;
+    stdout.execute(cursor::Show)?;
+    stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     stdout.execute(terminal::Clear(ClearType::All))?;
     stdout.execute(cursor::MoveTo(0, 0))?;
 
@@ -448,6 +425,13 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
                                 stdout.execute(cursor::MoveLeft(1))?;
                                 print!(" ");
                                 stdout.execute(cursor::MoveLeft(1))?;
+                                stdout.flush()?;
+                            }
+                            KeyCode::Tab => {
+                                if enable_sound && let Some(ref stream) = stream_opt {
+                                    play_type_sound(stream.mixer());
+                                }
+                                print!("    ");
                                 stdout.flush()?;
                             }
                             _ => {}
