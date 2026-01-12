@@ -1,0 +1,7 @@
+[target.x86_64-unknown-linux-gnu]
+linker = "/usr/bin/gcc"
+ar = "/usr/bin/ar"
+
+[build]
+rustc-wrapper = "" 
+# Clear wrapper just in case
