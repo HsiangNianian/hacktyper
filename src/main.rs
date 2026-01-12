@@ -1,16 +1,18 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use crossterm::{
-    cursor,
+    ExecutableCommand, cursor,
     event::{self, Event, KeyCode, KeyEventKind},
     style::{self, Color, Stylize},
     terminal::{self, ClearType},
-    ExecutableCommand,
 };
 use lazy_static::lazy_static;
-use regex::Regex;
 use rand::Rng; // Re-add Rand
-use rodio::{source::{Pink, Source}, OutputStreamBuilder};
+use regex::Regex;
+use rodio::{
+    OutputStreamBuilder,
+    source::{Pink, Source},
+};
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -45,7 +47,6 @@ struct Args {
     #[arg(short, long)]
     matrix: bool,
 }
-
 
 const DEFAULT_CODE: &str = r#"
 // MATRIX CORE SYSTEM - SECURITY LEVEL 9
@@ -128,14 +129,14 @@ fn highlight_code(code: &str) -> Vec<StyledChar> {
     }
 
     let mut result = Vec::with_capacity(code.len());
-    
+
     // We process the code line by line to safely handle comments and newlines
     for line in code.lines() {
         let line_len = line.len();
 
         // This is a naive 'painter' approach: buffer the chars with default color, then overwrite colors.
         let mut line_colors = vec![Color::Green; line_len];
-        
+
         // 1. Strings
         for cap in RE_STRING.find_iter(line) {
             for i in cap.start()..cap.end() {
@@ -145,24 +146,24 @@ fn highlight_code(code: &str) -> Vec<StyledChar> {
 
         // 2. Keywords
         for cap in RE_KEYWORD.find_iter(line) {
-             for i in cap.start()..cap.end() {
+            for i in cap.start()..cap.end() {
                 if line_colors[i] == Color::Green {
                     line_colors[i] = Color::Magenta;
                 }
             }
         }
-        
+
         for cap in RE_TYPE.find_iter(line) {
             for i in cap.start()..cap.end() {
-                 if line_colors[i] == Color::Green {
+                if line_colors[i] == Color::Green {
                     line_colors[i] = Color::Cyan;
                 }
             }
         }
-        
+
         for cap in RE_NUMBER.find_iter(line) {
-             for i in cap.start()..cap.end() {
-                 if line_colors[i] == Color::Green {
+            for i in cap.start()..cap.end() {
+                if line_colors[i] == Color::Green {
                     line_colors[i] = Color::Red;
                 }
             }
@@ -177,12 +178,21 @@ fn highlight_code(code: &str) -> Vec<StyledChar> {
 
         // Convert to StyledChar
         for (i, c) in line.chars().enumerate() {
-            result.push(StyledChar { char: c, color: line_colors[i] });
+            result.push(StyledChar {
+                char: c,
+                color: line_colors[i],
+            });
         }
-        
+
         // Handle Newline: In raw mode, we need \r\n
-        result.push(StyledChar { char: '\r', color: Color::Reset });
-        result.push(StyledChar { char: '\n', color: Color::Reset });
+        result.push(StyledChar {
+            char: '\r',
+            color: Color::Reset,
+        });
+        result.push(StyledChar {
+            char: '\n',
+            color: Color::Reset,
+        });
     }
 
     result
@@ -200,7 +210,7 @@ struct Stream {
 fn run_matrix(enable_sound: bool) -> Result<()> {
     // Setup Audio
     let stream_opt = OutputStreamBuilder::open_default_stream().ok();
-    
+
     // Setup Terminal
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -210,31 +220,35 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
 
     let (cols, rows) = terminal::size()?;
     let mut rng = rand::rng();
-    
+
     let mut streams: Vec<Stream> = Vec::new();
-    let standard_chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()".chars().collect();
+    let standard_chars: Vec<char> =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()"
+            .chars()
+            .collect();
 
     // Init streams, one per column logic (sparse)
-    // Actually, matrix rain usually has one stream per column, but they are sparse. 
+    // Actually, matrix rain usually has one stream per column, but they are sparse.
     // We will manage active streams.
     // Let's create `cols` potential streams.
     for c in 0..cols {
-         if rng.random_bool(0.1) { // 10% chance to start active
-             streams.push(create_stream(c, rows, &mut rng, &standard_chars));
-         }
+        if rng.random_bool(0.1) {
+            // 10% chance to start active
+            streams.push(create_stream(c, rows, &mut rng, &standard_chars));
+        }
     }
 
     loop {
         // Event Handling (Typing)
         if event::poll(Duration::from_millis(30))? {
-             if let Event::Key(key) = event::read()? {
+            if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
                         KeyCode::Esc => break,
                         _ => {
                             if enable_sound {
                                 if let Some(ref stream) = stream_opt {
-                                     play_type_sound(stream.mixer());
+                                    play_type_sound(stream.mixer());
                                 }
                             }
                             // Typing adds more rain intensity?
@@ -245,32 +259,32 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
                         }
                     }
                 }
-             }
+            }
         }
-        
+
         // Update & Render
         // We only draw updates to minimize IO
         for stream in &mut streams {
             let old_y = stream.y.floor() as i32;
             stream.y += stream.speed;
             let new_y = stream.y.floor() as i32;
-            
+
             if new_y > old_y {
                 // Draw Head
                 if new_y < rows as i32 && new_y >= 0 {
                     stdout.execute(cursor::MoveTo(stream.x, new_y as u16))?;
                     // Head is white/bright
-                     let char_idx = (new_y as usize) % stream.chars.len();
-                     print!("{}", stream.chars[char_idx].with(Color::White));
+                    let char_idx = (new_y as usize) % stream.chars.len();
+                    print!("{}", stream.chars[char_idx].with(Color::White));
                 }
-                
+
                 // Draw Tail (Green)
                 if old_y < rows as i32 && old_y >= 0 {
                     stdout.execute(cursor::MoveTo(stream.x, old_y as u16))?;
                     let char_idx = (old_y as usize) % stream.chars.len();
                     print!("{}", stream.chars[char_idx].with(Color::Green));
                 }
-                
+
                 // Erase (Black) at y - len
                 let erase_y = new_y - stream.len as i32;
                 if erase_y < rows as i32 && erase_y >= 0 {
@@ -279,16 +293,16 @@ fn run_matrix(enable_sound: bool) -> Result<()> {
                 }
             }
         }
-        
+
         // Prune finished streams and Respawn
         streams.retain(|s| (s.y - s.len as f32) < rows as f32);
-        
+
         // Ensure population
         while streams.len() < (cols as usize / 2) {
-             let c = rng.random_range(0..cols);
-             streams.push(create_stream(c, rows, &mut rng, &standard_chars));
+            let c = rng.random_range(0..cols);
+            streams.push(create_stream(c, rows, &mut rng, &standard_chars));
         }
-        
+
         stdout.flush()?;
     }
 
@@ -306,7 +320,7 @@ fn create_stream(col: u16, _rows: u16, rng: &mut impl Rng, charset: &[char]) -> 
     for _ in 0..40 {
         chars.push(charset[rng.random_range(0..charset.len())]);
     }
-    
+
     Stream {
         x: col,
         y: 0.0 - rng.random_range(0..10) as f32, // Start mostly above screen
@@ -321,21 +335,23 @@ fn spawn_windows(count: usize) -> Result<()> {
     let terminal = identify_terminal();
 
     for _ in 0..count {
-        // We carefully construct the command to run THIS executable again, 
+        // We carefully construct the command to run THIS executable again,
         // but WITHOUT the --multi-window flag to prevent infinite recursion.
         let child = Command::new(&terminal)
             // Most terminals use -e to run a command
             .arg("-e")
-            .arg(&current_exe) 
+            .arg(&current_exe)
             .spawn();
 
         if let Err(e) = child {
-            eprintln!("Failed to spawn terminal window: {}. Is '{}' installed?", e, terminal);
+            eprintln!(
+                "Failed to spawn terminal window: {}. Is '{}' installed?",
+                e, terminal
+            );
         }
     }
     Ok(())
 }
-
 
 fn identify_terminal() -> String {
     // A heuristic generic list of terminals to try on Linux
@@ -352,7 +368,7 @@ fn identify_terminal() -> String {
             return term.to_string();
         }
     }
-    
+
     // Fallback
     "x-terminal-emulator".to_string()
 }
@@ -362,7 +378,7 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
     // Initialize output stream but allow failure (e.g. no audio device)
     // We keep stream alive.
     let stream_opt = OutputStreamBuilder::open_default_stream().ok();
-    
+
     // Setup Terminal
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -383,7 +399,7 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
                         _ => {
                             if enable_sound {
                                 if let Some(ref stream) = stream_opt {
-                                     play_type_sound(stream.mixer());
+                                    play_type_sound(stream.mixer());
                                 }
                             }
 
@@ -392,17 +408,17 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
                                 for i in index..end {
                                     let sc = &content[i];
                                     if sc.char == '\r' || sc.char == '\n' {
-                                         print!("{}", sc.char);
+                                        print!("{}", sc.char);
                                     } else {
-                                         print!("{}", sc.char.with(sc.color));
+                                        print!("{}", sc.char.with(sc.color));
                                     }
                                 }
                                 stdout.flush()?;
-                                
+
                                 index = end;
                             } else {
                                 // Loop back to start if finished
-                                index = 0; 
+                                index = 0;
                                 stdout.execute(terminal::Clear(ClearType::All))?;
                                 stdout.execute(cursor::MoveTo(0, 0))?;
                             }
@@ -425,7 +441,7 @@ fn play_type_sound(mixer: &rodio::mixer::Mixer) {
     // Pink noise is a good approximation of a keypress thud/click
     let source = Pink::new(48000)
         .take_duration(Duration::from_millis(30))
-        .amplify(0.20); 
+        .amplify(0.20);
 
     mixer.add(source);
 }
