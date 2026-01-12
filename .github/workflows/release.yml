@@ -207,13 +207,13 @@ jobs:
           # Create generic Release Notes
           cat > release_notes.md << 'EOF'
           ## 📦 Installation
-          
+
           This release includes binaries for Linux (x64, ARM64, ARMv7), macOS (Intel, Apple Silicon), and Windows (x64, ARM64).
 
           Download the appropriate file for your system from the Assets section below.
 
           ---
-          
+
           ${{ steps.changelog.outputs.changes }}
           EOF
 
