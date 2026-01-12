@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.3] - 2026-01-12
+### Bug Fixes
+- [`51fc7d6`](https://github.com/HsiangNianian/hacktyper/commit/51fc7d6bf3526dce35cebad36a41e3ab93836c61) - simplify event handling logic in run_matrix and run_ui functions *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`a2ff6bf`](https://github.com/HsiangNianian/hacktyper/commit/a2ff6bf4758ac4fd8250de9d8f4ef2879844858f) - streamline event handling in run_matrix and run_ui functions *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`c180991`](https://github.com/HsiangNianian/hacktyper/commit/c180991880aa8cb473711cb0310e1f0b2aaede96) - enhance run_ui function with dynamic chunk size adjustment and add result sound feedback *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`7ef8979`](https://github.com/HsiangNianian/hacktyper/commit/7ef89796518f9ab491533af65ec699ccd2511dfd) - bump version to 0.2.3 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+
 ## [v0.2.2] - 2026-01-12
 ### New Features
 - [`047afc4`](https://github.com/HsiangNianian/hacktyper/commit/047afc4c17b80f8c691789e0a272892e4b14b2ff) - bump version to 0.2.2 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
@@ -21,3 +29,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [`26e26aa`](https://github.com/HsiangNianian/hacktyper/commit/26e26aacef4ace3cbc8ea5b50a89b6494727dd96) - remove invalid --deb-version argument with v-prefix in release workflow *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
 
 [v0.2.2]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.1...v0.2.2
+[v0.2.3]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.2...v0.2.3
