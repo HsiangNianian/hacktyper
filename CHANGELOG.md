@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.4] - 2026-01-12
+### New Features
+- [`9a68bac`](https://github.com/HsiangNianian/hacktyper/commit/9a68baca53125da4de60fd424e96ec8ba080791f) - add freestyle mode to run_ui for custom input and enhance sound feedback *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+### Bug Fixes
+- [`9ffdfee`](https://github.com/HsiangNianian/hacktyper/commit/9ffdfee7f02f5a093b4b976cb2c38933289ac398) - bump version to 0.2.4 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+
 ## [v0.2.3] - 2026-01-12
 ### Bug Fixes
 - [`51fc7d6`](https://github.com/HsiangNianian/hacktyper/commit/51fc7d6bf3526dce35cebad36a41e3ab93836c61) - simplify event handling logic in run_matrix and run_ui functions *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
@@ -30,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [v0.2.2]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.1...v0.2.2
 [v0.2.3]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.2...v0.2.3
+[v0.2.4]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.3...v0.2.4
