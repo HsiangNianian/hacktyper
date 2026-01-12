@@ -19,109 +19,138 @@ permissions:
 
 jobs:
   build-linux:
-    name: Linux (Deb/RPM/Bin)
+    name: Linux (${{ matrix.target }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            deb_arch: amd64
+            rpm_arch: x86_64
+          - target: aarch64-unknown-linux-gnu
+            deb_arch: arm64
+            rpm_arch: aarch64
+          - target: armv7-unknown-linux-gnueabihf
+            deb_arch: armhf
+            rpm_arch: armv7hl
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Dependencies
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libudev-dev pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Cross
+        if: matrix.target != 'x86_64-unknown-linux-gnu'
+        run: cargo install cross
 
       - name: Install Packaging Tools
         run: |
           cargo install cargo-deb
-          cargo install cargo-generate-rpm
+          sudo apt-get update
+          sudo apt-get install -y alien
 
-      - name: Build Binary
+      - name: Build Binary (Host)
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: cargo build --release
 
-      - name: Build Deb
-        run: cargo deb --no-build --output target/hacktyper-amd64.deb
+      - name: Build Binary (Cross)
+        if: matrix.target != 'x86_64-unknown-linux-gnu'
+        run: cross build --release --target ${{ matrix.target }}
 
-      - name: Build RPM
-        run: cargo generate-rpm --payload-compress zstd --output target/hacktyper-x86_64.rpm
+      - name: Build Deb
+        run: |
+          cargo deb --no-build --target ${{ matrix.target }} --output target/hacktyper-${{ matrix.deb_arch }}.deb
+
+      - name: Build RPM (via Alien)
+        run: |
+          sudo alien -r target/hacktyper-${{ matrix.deb_arch }}.deb --scripts 
+          # Alien generates a file like hacktyper-0.2.2-2.x86_64.rpm, we need to rename/move it
+          mv hacktyper*.rpm target/hacktyper-${{ matrix.rpm_arch }}.rpm
 
       - name: Archive Binary
         run: |
-          cd target/release
-          tar -czf ../../hacktyper-linux-x86_64.tar.gz hacktyper
-          cd ../..
-
-      - name: Search for files
-        run: |
-          ls -lh target/
+          cd target/${{ matrix.target }}/release
+          tar -czf ../../../hacktyper-linux-${{ matrix.target }}.tar.gz hacktyper
+          cd ../../..
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-artifacts
+          name: linux-artifacts-${{ matrix.target }}
           path: |
-            target/hacktyper-amd64.deb
-            target/hacktyper-x86_64.rpm
-            hacktyper-linux-x86_64.tar.gz
+            target/hacktyper-${{ matrix.deb_arch }}.deb
+            target/hacktyper-${{ matrix.rpm_arch }}.rpm
+            hacktyper-linux-${{ matrix.target }}.tar.gz
 
   build-macos:
-    name: MacOS (Universal/Bin)
+    name: MacOS (${{ matrix.target }})
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-apple-darwin,aarch64-apple-darwin
+          targets: ${{ matrix.target }}
 
-      - name: Build x86_64
-        run: cargo build --release --target x86_64-apple-darwin
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Build ARM64
-        run: cargo build --release --target aarch64-apple-darwin
-
-      - name: Archive Binaries
+      - name: Archive
         run: |
-          # x86_64
-          cp target/x86_64-apple-darwin/release/hacktyper hacktyper
-          tar -czf hacktyper-macos-x86_64.tar.gz hacktyper
-          
-          # ARM64
-          cp target/aarch64-apple-darwin/release/hacktyper hacktyper
-          tar -czf hacktyper-macos-aarch64.tar.gz hacktyper
+          cd target/${{ matrix.target }}/release
+          tar -czf ../../../hacktyper-macos-${{ matrix.target }}.tar.gz hacktyper
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-artifacts
-          path: |
-            hacktyper-macos-x86_64.tar.gz
-            hacktyper-macos-aarch64.tar.gz
+          name: macos-artifacts-${{ matrix.target }}
+          path: hacktyper-macos-${{ matrix.target }}.tar.gz
 
   build-windows:
-    name: Windows (Exe)
+    name: Windows (${{ matrix.target }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+          - target: aarch64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Archive
         shell: pwsh
         run: |
-          Compress-Archive -Path target/release/hacktyper.exe -DestinationPath hacktyper-windows-x86_64.zip
+          Compress-Archive -Path target/${{ matrix.target }}/release/hacktyper.exe -DestinationPath hacktyper-windows-${{ matrix.target }}.zip
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-artifacts
-          path: hacktyper-windows-x86_64.zip
+          name: windows-artifacts-${{ matrix.target }}
+          path: hacktyper-windows-${{ matrix.target }}.zip
 
   create-release:
     name: Create GitHub Release
@@ -153,7 +182,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "*-artifacts"
+          pattern: "*-artifacts-*"
           path: artifacts/
           merge-multiple: true
 
@@ -172,23 +201,11 @@ jobs:
 
           # Create generic Release Notes
           cat > release_notes.md << 'EOF'
-          ## 📦 Installation Scripts
+          ## 📦 Installation
           
-          ### Linux (Debian/Ubuntu)
-          ```bash
-          sudo dpkg -i hacktyper-amd64.deb
-          ```
+          This release includes binaries for Linux (x64, ARM64, ARMv7), macOS (Intel, Apple Silicon), and Windows (x64, ARM64).
 
-          ### Linux (Fedora/RHEL/Suse)
-          ```bash
-          sudo rpm -i hacktyper-x86_64.rpm
-          ```
-           
-          ### macOS (Apple Silicon)
-          Download `hacktyper-macos-aarch64.tar.gz`
-          
-          ### Windows
-          Download `hacktyper-windows-x86_64.zip`
+          Download the appropriate file for your system from the Assets section below.
 
           ---
           
