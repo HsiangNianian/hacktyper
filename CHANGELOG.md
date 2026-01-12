@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.6] - 2026-01-12
+### Bug Fixes
+- [`51b51f4`](https://github.com/HsiangNianian/hacktyper/commit/51b51f4511da23943cbb8024611812df3b46b71a) - bump version to 0.2.6 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+### Chores
+- [`088bfc9`](https://github.com/HsiangNianian/hacktyper/commit/088bfc9eabf914c96fa482bd1349a013d27ba777) - update copyright year in Cargo.toml to 2026 *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+
 ## [v0.2.5] - 2026-01-12
 ### Bug Fixes
 - [`962b6d5`](https://github.com/HsiangNianian/hacktyper/commit/962b6d5b01cb737fa71069e2c254a7347b8ffa75) - update dependencies in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
@@ -50,3 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.3]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.2...v0.2.3
 [v0.2.4]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.3...v0.2.4
 [v0.2.5]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.4...v0.2.5
+[v0.2.6]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.5...v0.2.6
