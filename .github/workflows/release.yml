@@ -69,13 +69,13 @@ jobs:
 
       - name: Build Deb
         run: |
-          cargo deb --no-build --target ${{ matrix.target }} --output target/hacktyper-${{ matrix.deb_arch }}.deb
+          cargo deb --no-build --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb
 
       - name: Build RPM (via Alien)
         run: |
-          sudo alien -r target/hacktyper-${{ matrix.deb_arch }}.deb --scripts 
+          sudo alien -r hacktyper-${{ matrix.deb_arch }}.deb --scripts 
           # Alien generates a file like hacktyper-0.2.2-2.x86_64.rpm, we need to rename/move it
-          mv hacktyper*.rpm target/hacktyper-${{ matrix.rpm_arch }}.rpm
+          mv hacktyper*.rpm hacktyper-${{ matrix.rpm_arch }}.rpm
 
       - name: Archive Binary
         run: |
@@ -88,8 +88,8 @@ jobs:
         with:
           name: linux-artifacts-${{ matrix.target }}
           path: |
-            target/hacktyper-${{ matrix.deb_arch }}.deb
-            target/hacktyper-${{ matrix.rpm_arch }}.rpm
+            hacktyper-${{ matrix.deb_arch }}.deb
+            hacktyper-${{ matrix.rpm_arch }}.rpm
             hacktyper-linux-${{ matrix.target }}.tar.gz
 
   build-macos:
