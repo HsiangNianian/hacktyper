@@ -99,14 +99,13 @@ fn main() -> Result<()> {
         Some(path) => {
             let ext = path.extension()
                 .and_then(|e| e.to_str())
-                .unwrap_or("rs")
-                .to_string();
+                .map(|s| s.to_string());
             let content = fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read file: {:?}", path))
                 .unwrap_or_else(|_| DEFAULT_CODE.to_string());
             (content, ext)
         },
-        None => (DEFAULT_CODE.to_string(), "rs".to_string()),
+        None => (DEFAULT_CODE.to_string(), Some("rs".to_string())),
     };
 
     // Infinite loop of the code logic to prevent running out
@@ -116,7 +115,7 @@ fn main() -> Result<()> {
         run_matrix(args.sound)?;
     } else {
         // Pre-process content for highlighting and formatting
-        let styled_content = highlight_code(&full_code, &extension);
+        let styled_content = highlight_code(&full_code, extension.as_deref());
         run_ui(&styled_content, args.speed, args.sound)?;
     }
 
@@ -128,7 +127,7 @@ struct StyledChar {
     color: Color,
 }
 
-fn highlight_code(code: &str, extension: &str) -> Vec<StyledChar> {
+fn highlight_code(code: &str, extension: Option<&str>) -> Vec<StyledChar> {
     let ps = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
 
@@ -137,9 +136,20 @@ fn highlight_code(code: &str, extension: &str) -> Vec<StyledChar> {
         .or_else(|| ts.themes.get("base16-mocha.dark"))
         .unwrap_or_else(|| ts.themes.values().next().unwrap());
 
-    let syntax = ps.find_syntax_by_extension(extension)
-        .or_else(|| ps.find_syntax_by_first_line(code))
-        .unwrap_or_else(|| ps.find_syntax_plain_text());
+    let mut syntax = ps.find_syntax_plain_text();
+    
+    if let Some(ext) = extension {
+        if let Some(s) = ps.find_syntax_by_extension(ext) {
+            syntax = s;
+        }
+    }
+    
+    // Fallback to first line detection if extension failed or was not provided
+    if syntax.name == "Plain Text" {
+         if let Some(s) = ps.find_syntax_by_first_line(code) {
+             syntax = s;
+         }
+    }
 
     let mut h = HighlightLines::new(syntax, theme);
     let mut result = Vec::with_capacity(code.len());
@@ -356,9 +366,9 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
     terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     stdout.execute(terminal::EnterAlternateScreen)?;
-    stdout.execute(cursor::Show)?;
-    stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     stdout.execute(terminal::Clear(ClearType::All))?;
+    stdout.execute(cursor::Show)?; // Show cursor AFTER clear
+    stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     stdout.execute(cursor::MoveTo(0, 0))?;
 
     let mut index = 0;
@@ -432,6 +442,19 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
                                     play_type_sound(stream.mixer());
                                 }
                                 print!("    ");
+                                stdout.flush()?;
+                            }
+                            KeyCode::BackTab => {
+                                // Handle Shift+Tab if supported (Go back 4 spaces?)
+                                // Simple implementation: perform backspace 4 times
+                                if enable_sound && let Some(ref stream) = stream_opt {
+                                    play_type_sound(stream.mixer());
+                                }
+                                for _ in 0..4 {
+                                    stdout.execute(cursor::MoveLeft(1))?;
+                                    print!(" ");
+                                    stdout.execute(cursor::MoveLeft(1))?;
+                                }
                                 stdout.flush()?;
                             }
                             _ => {}
@@ -515,7 +538,7 @@ fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
     
     // Simple flashing effect
     stdout.execute(terminal::Clear(ClearType::All))?;
-    stdout.execute(cursor::Hide)?;
+    stdout.execute(cursor::Hide)?; // Temporarily hide during animation
     
     for _ in 0..6 {
         stdout.execute(cursor::MoveTo(start_x, start_y))?;
@@ -532,5 +555,7 @@ fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
     // Finally clear and prepare to respawn code
     stdout.execute(terminal::Clear(ClearType::All))?;
     stdout.execute(cursor::MoveTo(0, 0))?;
+    stdout.execute(cursor::Show)?; // Restore cursor
+    stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     Ok(())
 }
