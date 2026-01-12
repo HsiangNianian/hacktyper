@@ -387,6 +387,7 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
     let mut index = 0;
     let mut chunk_size = start_chunk_size;
     let max_len = content.len();
+    let mut freestyle_mode = false;
 
     loop {
         if event::poll(Duration::from_millis(50))?
@@ -419,29 +420,63 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
                     show_result_popup(&mut stdout, false)?;
                     index = 0; // Reset code
                 }
-                _ => {
-                    if enable_sound && let Some(ref stream) = stream_opt {
-                        play_type_sound(stream.mixer());
-                    }
-
-                    let end = (index + chunk_size).min(max_len);
-                    if index < max_len {
-                        for i in index..end {
-                            let sc = &content[i];
-                            if sc.char == '\r' || sc.char == '\n' {
-                                print!("{}", sc.char);
-                            } else {
-                                print!("{}", sc.char.with(sc.color));
+                KeyCode::F(3) => {
+                    freestyle_mode = !freestyle_mode;
+                    // Optional: You could show a swift popup "FREESTYLE ENABLED", but let's keep it subtle for now.
+                }
+                code => {
+                    if freestyle_mode {
+                        match code {
+                            KeyCode::Char(c) => {
+                                if enable_sound && let Some(ref stream) = stream_opt {
+                                    play_type_sound(stream.mixer());
+                                }
+                                print!("{}", c.with(Color::Green));
+                                stdout.flush()?;
                             }
+                            KeyCode::Enter => {
+                                if enable_sound && let Some(ref stream) = stream_opt {
+                                    play_type_sound(stream.mixer());
+                                }
+                                print!("\r\n");
+                                stdout.flush()?;
+                            }
+                            KeyCode::Backspace => {
+                                if enable_sound && let Some(ref stream) = stream_opt {
+                                    play_type_sound(stream.mixer());
+                                }
+                                stdout.execute(cursor::MoveLeft(1))?;
+                                print!(" ");
+                                stdout.execute(cursor::MoveLeft(1))?;
+                                stdout.flush()?;
+                            }
+                            _ => {}
                         }
-                        stdout.flush()?;
-
-                        index = end;
                     } else {
-                        // Loop back to start if finished
-                        index = 0;
-                        stdout.execute(terminal::Clear(ClearType::All))?;
-                        stdout.execute(cursor::MoveTo(0, 0))?;
+                        // Standard Hacker Typer Mode
+                        if enable_sound && let Some(ref stream) = stream_opt {
+                            play_type_sound(stream.mixer());
+                        }
+
+                        let end = (index + chunk_size).min(max_len);
+                        if index < max_len {
+                            for i in index..end {
+                                let sc = &content[i];
+                                if sc.char == '\r' || sc.char == '\n' {
+                                    print!("{}", sc.char);
+                                } else {
+                                    print!("{}", sc.char.with(sc.color));
+                                }
+                            }
+                            stdout.flush()?;
+
+                            index = end;
+                        } else {
+                            // Loop back to start if finished
+                            index = 0;
+                            stdout.execute(terminal::Clear(ClearType::All))?;
+                            stdout.execute(cursor::MoveTo(0, 0))?;
+                        }
                     }
                 }
             }
@@ -456,13 +491,18 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
 }
 
 fn play_type_sound(mixer: &rodio::mixer::Mixer) {
-    // Generate a short burst of noise to simulate a mechanical switch
-    // Pink noise is a good approximation of a keypress thud/click
-    let source = Pink::new(48000)
-        .take_duration(Duration::from_millis(30))
-        .amplify(0.20);
+    // "Thock" component (Body) - Low sine wave
+    let body = SineWave::new(150.0)
+        .take_duration(Duration::from_millis(50))
+        .amplify(0.10);
+    
+    // "Click" component (Transient) - Short pink noise
+    let click = Pink::new(48000)
+        .take_duration(Duration::from_millis(15))
+        .amplify(0.15);
 
-    mixer.add(source);
+    mixer.add(body);
+    mixer.add(click);
 }
 
 fn play_result_sound(success: bool, mixer: &rodio::mixer::Mixer) {

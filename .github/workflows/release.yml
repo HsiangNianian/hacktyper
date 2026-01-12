@@ -70,22 +70,22 @@ jobs:
       - name: Build Deb
         run: |
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-gnu" ]]; then
-            cargo deb --no-build --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb
+            cargo deb --no-build --target ${{ matrix.target }} --output hacktyper-linux-${{ matrix.deb_arch }}.deb
           else
             # For cross-compilation, skip strip and system dependency check to avoid errors on x86 host
-            cargo deb --no-build --no-strip --target ${{ matrix.target }} --output hacktyper-${{ matrix.deb_arch }}.deb --fast
+            cargo deb --no-build --no-strip --target ${{ matrix.target }} --output hacktyper-linux-${{ matrix.deb_arch }}.deb --fast
           fi
 
       - name: Build RPM (via Alien)
         run: |
-          sudo alien -r hacktyper-${{ matrix.deb_arch }}.deb --scripts 
+          sudo alien -r hacktyper-linux-${{ matrix.deb_arch }}.deb --scripts 
           # Alien generates a file like hacktyper-0.2.2-2.x86_64.rpm, we need to rename/move it
-          mv hacktyper*.rpm hacktyper-${{ matrix.rpm_arch }}.rpm
+          mv hacktyper*.rpm hacktyper-linux-${{ matrix.rpm_arch }}.rpm
 
       - name: Archive Binary
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czf ../../../hacktyper-linux-${{ matrix.target }}.tar.gz hacktyper
+          tar -czf ../../../hacktyper-linux-${{ matrix.rpm_arch }}.tar.gz hacktyper
           cd ../../..
 
       - name: Upload Artifacts
@@ -93,9 +93,9 @@ jobs:
         with:
           name: linux-artifacts-${{ matrix.target }}
           path: |
-            hacktyper-${{ matrix.deb_arch }}.deb
-            hacktyper-${{ matrix.rpm_arch }}.rpm
-            hacktyper-linux-${{ matrix.target }}.tar.gz
+            hacktyper-linux-${{ matrix.deb_arch }}.deb
+            hacktyper-linux-${{ matrix.rpm_arch }}.rpm
+            hacktyper-linux-${{ matrix.rpm_arch }}.tar.gz
 
   build-macos:
     name: MacOS (${{ matrix.target }})
@@ -103,7 +103,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+        include:
+          - target: x86_64-apple-darwin
+            arch_name: x86_64
+          - target: aarch64-apple-darwin
+            arch_name: aarch64
     steps:
       - uses: actions/checkout@v4
 
@@ -118,13 +122,13 @@ jobs:
       - name: Archive
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czf ../../../hacktyper-macos-${{ matrix.target }}.tar.gz hacktyper
+          tar -czf ../../../hacktyper-macos-${{ matrix.arch_name }}.tar.gz hacktyper
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-artifacts-${{ matrix.target }}
-          path: hacktyper-macos-${{ matrix.target }}.tar.gz
+          path: hacktyper-macos-${{ matrix.arch_name }}.tar.gz
 
   build-windows:
     name: Windows (${{ matrix.target }})
@@ -134,7 +138,9 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-msvc
+            arch_name: x86_64
           - target: aarch64-pc-windows-msvc
+            arch_name: aarch64
     steps:
       - uses: actions/checkout@v4
 
@@ -149,13 +155,13 @@ jobs:
       - name: Archive
         shell: pwsh
         run: |
-          Compress-Archive -Path target/${{ matrix.target }}/release/hacktyper.exe -DestinationPath hacktyper-windows-${{ matrix.target }}.zip
+          Compress-Archive -Path target/${{ matrix.target }}/release/hacktyper.exe -DestinationPath hacktyper-windows-${{ matrix.arch_name }}.zip
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts-${{ matrix.target }}
-          path: hacktyper-windows-${{ matrix.target }}.zip
+          path: hacktyper-windows-${{ matrix.arch_name }}.zip
 
   create-release:
     name: Create GitHub Release
@@ -208,11 +214,12 @@ jobs:
           cat > release_notes.md << 'EOF'
           ## 📦 Installation
 
-          This release includes binaries for Linux (x64, ARM64, ARMv7), macOS (Intel, Apple Silicon), and Windows (x64, ARM64).
-
-          Download the appropriate file for your system from the Assets section below.
-
-          ---
+          This release includes binaries for Linux, macOS, and Windows.
+          
+          **Feature**
+          - Linux: x86_64, aarch64, armv7
+          - macOS: x86_64 (Intel), aarch64 (Apple Silicon)
+          - Windows: x86_64, aarch64 (WoA)
 
           ${{ steps.changelog.outputs.changes }}
           EOF
