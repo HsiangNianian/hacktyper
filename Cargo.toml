@@ -10,7 +10,7 @@ readme = "README.md"
 
 [package.metadata.deb]
 maintainer = "HsiangNianian"
-copyright = "2026, HsiangNianian"
+copyright = "2024-2026, HsiangNianian"
 license-file = ["LICENSE", "4"]
 depends = "libc6, libasound2"
 section = "utility"
