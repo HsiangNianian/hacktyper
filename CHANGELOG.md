@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.5] - 2026-01-12
+### Bug Fixes
+- [`962b6d5`](https://github.com/HsiangNianian/hacktyper/commit/962b6d5b01cb737fa71069e2c254a7347b8ffa75) - update dependencies in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`713cb4f`](https://github.com/HsiangNianian/hacktyper/commit/713cb4f4a596bfc7576df96d04d47af036dc2ee7) - improve file extension handling and enhance syntax highlighting logic *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`6018af9`](https://github.com/HsiangNianian/hacktyper/commit/6018af9f9f23f5bff25fec7c014cd51ff9b98c01) - bump version to 0.2.5 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+### Refactors
+- [`b86675c`](https://github.com/HsiangNianian/hacktyper/commit/b86675c288189d012baffc5f011b9fa38d7f2adf) - remove unused dependencies and improve code highlighting logic *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+
 ## [v0.2.4] - 2026-01-12
 ### New Features
 - [`9a68bac`](https://github.com/HsiangNianian/hacktyper/commit/9a68baca53125da4de60fd424e96ec8ba080791f) - add freestyle mode to run_ui for custom input and enhance sound feedback *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
@@ -39,3 +49,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.2]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.1...v0.2.2
 [v0.2.3]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.2...v0.2.3
 [v0.2.4]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.3...v0.2.4
+[v0.2.5]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.4...v0.2.5
