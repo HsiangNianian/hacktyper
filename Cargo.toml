@@ -2,6 +2,9 @@
 name = "hacktyper"
 version = "0.1.0"
 edition = "2024"
+authors = ["HsiangNianian"]
+description = "A terminal-based typing simulator that mimics hacking scenes from movies."
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.100"
