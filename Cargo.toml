@@ -5,6 +5,24 @@ edition = "2024"
 authors = ["HsiangNianian"]
 description = "A terminal-based typing simulator that mimics hacking scenes from movies."
 license = "MIT"
+repository = "https://github.com/HsiangNianian/hacktyper"
+readme = "README.md"
+
+[package.metadata.deb]
+maintainer = "HsiangNianian"
+copyright = "2024, HsiangNianian"
+license-file = ["LICENSE", "4"]
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/hacktyper", "usr/bin/", "755"],
+]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/hacktyper", dest = "/usr/bin/hacktyper", mode = "755" }
+]
 
 [dependencies]
 anyhow = "1.0.100"

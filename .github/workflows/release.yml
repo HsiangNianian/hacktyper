@@ -18,60 +18,114 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            binary_name: hacktyper
-            asset_name: hacktyper-linux-amd64
+  build-linux:
+    name: Linux (Deb/RPM/Bin)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            binary_name: hacktyper.exe
-            asset_name: hacktyper-windows-amd64.exe
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev pkg-config
 
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            binary_name: hacktyper
-            asset_name: hacktyper-macos-amd64
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Packaging Tools
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
+
+      - name: Build Binary
+        run: cargo build --release
+
+      - name: Build Deb
+        run: cargo deb --no-build --output target/hacktyper-amd64.deb
+
+      - name: Build RPM
+        run: cargo generate-rpm --payload-compress zstd --output target/hacktyper-x86_64.rpm
+
+      - name: Archive Binary
+        run: |
+          cd target/release
+          tar -czf ../../hacktyper-linux-x86_64.tar.gz hacktyper
+          cd ../..
+
+      - name: Search for files
+        run: |
+          ls -lh target/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            target/hacktyper-amd64.deb
+            target/hacktyper-x86_64.rpm
+            hacktyper-linux-x86_64.tar.gz
+
+  build-macos:
+    name: MacOS (Universal/Bin)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
 
-      # Linux needs specific dev tools (alsa for audio)
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+      - name: Build x86_64
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Build ARM64
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Archive Binaries
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2-dev libudev-dev pkg-config
+          # x86_64
+          cp target/x86_64-apple-darwin/release/hacktyper hacktyper
+          tar -czf hacktyper-macos-x86_64.tar.gz hacktyper
+          
+          # ARM64
+          cp target/aarch64-apple-darwin/release/hacktyper hacktyper
+          tar -czf hacktyper-macos-aarch64.tar.gz hacktyper
 
-      - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Rename binary
-        shell: bash
-        run: |
-          cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} ${{ matrix.asset_name }}
-
-      - name: Upload Artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
-          path: ${{ matrix.asset_name }}
-          if-no-files-found: error
+          name: macos-artifacts
+          path: |
+            hacktyper-macos-x86_64.tar.gz
+            hacktyper-macos-aarch64.tar.gz
+
+  build-windows:
+    name: Windows (Exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Archive
+        shell: pwsh
+        run: |
+          Compress-Archive -Path target/release/hacktyper.exe -DestinationPath hacktyper-windows-x86_64.zip
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: hacktyper-windows-x86_64.zip
 
   create-release:
     name: Create GitHub Release
-    needs: build
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
 
@@ -99,11 +153,11 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binaries
+          pattern: "*-artifacts"
           path: artifacts/
           merge-multiple: true
 
-      - name: Display structure of downloaded files
+      - name: Display files
         run: ls -R artifacts/
 
       - name: Create or Update Release
@@ -116,35 +170,36 @@ jobs:
             VERSION="${{ github.ref_name }}"
           fi
 
-          cat > release_notes.md << 'END_OF_NOTES'
-          ## 📦 Installation
-          Download the binary for your system from the Assets section below.
+          # Create generic Release Notes
+          cat > release_notes.md << 'EOF'
+          ## 📦 Installation Scripts
+          
+          ### Linux (Debian/Ubuntu)
+          ```bash
+          sudo dpkg -i hacktyper-amd64.deb
+          ```
 
-          ### Linux
-          \`\`\`bash
-          chmod +x hacktyper-linux-amd64
-          ./hacktyper-linux-amd64
-          \`\`\`
-
-          ### macOS
-          \`\`\`bash
-          chmod +x hacktyper-macos-amd64
-          ./hacktyper-macos-amd64
-          \`\`\`
-
+          ### Linux (Fedora/RHEL/Suse)
+          ```bash
+          sudo rpm -i hacktyper-x86_64.rpm
+          ```
+           
+          ### macOS (Apple Silicon)
+          Download `hacktyper-macos-aarch64.tar.gz`
+          
           ### Windows
-          Run \`hacktyper-windows-amd64.exe\` in PowerShell or Command Prompt.
+          Download `hacktyper-windows-x86_64.zip`
 
           ---
-
+          
           ${{ steps.changelog.outputs.changes }}
-          END_OF_NOTES
+          EOF
 
-          # Check if release exists
+          # Check Release existence
           if gh release view "${VERSION}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "📝 Release ${VERSION} exists, updating..."
-
-            # Remove existing assets to avoid conflicts or duplicates
+            echo "Updating existing release..."
+            
+            # Delete old assets
             ASSETS=$(gh release view "${VERSION}" --repo "${{ github.repository }}" --json assets -q '.assets[].name')
             for asset in $ASSETS; do
               gh release delete-asset "${VERSION}" "$asset" --repo "${{ github.repository }}" || true
@@ -152,14 +207,11 @@ jobs:
 
             gh release edit "${VERSION}" \
               --repo "${{ github.repository }}" \
-              --notes-file release_notes.md \
-              --title "🚀 ${VERSION}"
-
-            gh release upload "${VERSION}" \
-              artifacts/* \
-              --repo "${{ github.repository }}" --clobber
+              --notes-file release_notes.md
+            
+            gh release upload "${VERSION}" artifacts/* --repo "${{ github.repository }}"
           else
-            echo "✨ Creating new release ${VERSION}..."
+            echo "Creating new release..."
             gh release create "${VERSION}" \
               --repo "${{ github.repository }}" \
               --notes-file release_notes.md \
