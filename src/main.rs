@@ -11,7 +11,7 @@ use rand::Rng; // Re-add Rand
 use regex::Regex;
 use rodio::{
     OutputStreamBuilder,
-    source::{Pink, Source},
+    source::{Pink, SineWave, Source},
 };
 use std::fs;
 use std::io::{self, Write};
@@ -370,7 +370,7 @@ fn identify_terminal() -> String {
     "x-terminal-emulator".to_string()
 }
 
-fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Result<()> {
+fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -> Result<()> {
     // Setup Audio
     // Initialize output stream but allow failure (e.g. no audio device)
     // We keep stream alive.
@@ -385,6 +385,7 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
     stdout.execute(cursor::MoveTo(0, 0))?;
 
     let mut index = 0;
+    let mut chunk_size = start_chunk_size;
     let max_len = content.len();
 
     loop {
@@ -394,6 +395,30 @@ fn run_ui(content: &[StyledChar], chunk_size: usize, enable_sound: bool) -> Resu
         {
             match key.code {
                 KeyCode::Esc => break,
+                KeyCode::Up => {
+                    chunk_size = chunk_size.saturating_add(1);
+                }
+                KeyCode::Down => {
+                    chunk_size = chunk_size.saturating_sub(1).max(1);
+                }
+                KeyCode::F(1) => {
+                    if let Some(ref stream) = stream_opt {
+                        if enable_sound {
+                            play_result_sound(true, stream.mixer());
+                        }
+                    }
+                    show_result_popup(&mut stdout, true)?;
+                    index = 0; // Reset code
+                }
+                KeyCode::F(2) => {
+                    if let Some(ref stream) = stream_opt {
+                        if enable_sound {
+                            play_result_sound(false, stream.mixer());
+                        }
+                    }
+                    show_result_popup(&mut stdout, false)?;
+                    index = 0; // Reset code
+                }
                 _ => {
                     if enable_sound && let Some(ref stream) = stream_opt {
                         play_type_sound(stream.mixer());
@@ -438,4 +463,50 @@ fn play_type_sound(mixer: &rodio::mixer::Mixer) {
         .amplify(0.20);
 
     mixer.add(source);
+}
+
+fn play_result_sound(success: bool, mixer: &rodio::mixer::Mixer) {
+    if success {
+        // Major chord arpeggio for success
+        let vol = 0.15;
+        mixer.add(SineWave::new(523.25).take_duration(Duration::from_millis(200)).amplify(vol)); // C5
+        mixer.add(SineWave::new(659.25).take_duration(Duration::from_millis(200)).amplify(vol)); // E5
+        mixer.add(SineWave::new(783.99).take_duration(Duration::from_millis(200)).amplify(vol)); // G5
+    } else {
+        // Low dissonance for failure
+        let vol = 0.30;
+        mixer.add(SineWave::new(110.0).take_duration(Duration::from_millis(600)).amplify(vol)); // A2
+        mixer.add(SineWave::new(116.54).take_duration(Duration::from_millis(500)).amplify(vol)); // A#2 (Clash)
+    }
+}
+
+fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
+    let (cols, rows) = terminal::size()?;
+    let text = if success { " ACCESS GRANTED " } else { " ACCESS DENIED " };
+    let color = if success { Color::Green } else { Color::Red };
+    
+    let text_len = text.len() as u16;
+    let start_x = (cols.saturating_sub(text_len)) / 2;
+    let start_y = rows / 2;
+    
+    // Simple flashing effect
+    stdout.execute(terminal::Clear(ClearType::All))?;
+    stdout.execute(cursor::Hide)?;
+    
+    for _ in 0..6 {
+        stdout.execute(cursor::MoveTo(start_x, start_y))?;
+        // Draw with reversed colors for "box" feel
+        print!("{}", text.with(Color::Black).on(color).bold());
+        stdout.flush()?;
+        std::thread::sleep(Duration::from_millis(150));
+        
+        stdout.execute(terminal::Clear(ClearType::All))?;
+        stdout.flush()?;
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    
+    // Finally clear and prepare to respawn code
+    stdout.execute(terminal::Clear(ClearType::All))?;
+    stdout.execute(cursor::MoveTo(0, 0))?;
+    Ok(())
 }
