@@ -17,8 +17,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 use syntect::easy::HighlightLines;
+use syntect::highlighting::{Style, ThemeSet};
 use syntect::parsing::SyntaxSet;
-use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::LinesWithEndings;
 
 #[derive(Parser, Debug)]
@@ -96,14 +96,15 @@ fn main() -> Result<()> {
 
     let (code, extension) = match args.file {
         Some(path) => {
-            let ext = path.extension()
+            let ext = path
+                .extension()
                 .and_then(|e| e.to_str())
                 .map(|s| s.to_string());
             let content = fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read file: {:?}", path))
                 .unwrap_or_else(|_| DEFAULT_CODE.to_string());
             (content, ext)
-        },
+        }
         None => (DEFAULT_CODE.to_string(), Some("rs".to_string())),
     };
 
@@ -131,23 +132,25 @@ fn highlight_code(code: &str, extension: Option<&str>) -> Vec<StyledChar> {
     let ts = ThemeSet::load_defaults();
 
     // Try to find a nice dark theme
-    let theme = ts.themes.get("base16-ocean.dark")
+    let theme = ts
+        .themes
+        .get("base16-ocean.dark")
         .or_else(|| ts.themes.get("base16-mocha.dark"))
         .unwrap_or_else(|| ts.themes.values().next().unwrap());
 
     let mut syntax = ps.find_syntax_plain_text();
-    
-    if let Some(ext) = extension {
-        if let Some(s) = ps.find_syntax_by_extension(ext) {
-            syntax = s;
-        }
+
+    if let Some(ext) = extension
+        && let Some(s) = ps.find_syntax_by_extension(ext)
+    {
+        syntax = s;
     }
-    
+
     // Fallback to first line detection if extension failed or was not provided
-    if syntax.name == "Plain Text" {
-         if let Some(s) = ps.find_syntax_by_first_line(code) {
-             syntax = s;
-         }
+    if syntax.name == "Plain Text"
+        && let Some(s) = ps.find_syntax_by_first_line(code)
+    {
+        syntax = s;
     }
 
     let mut h = HighlightLines::new(syntax, theme);
@@ -155,16 +158,26 @@ fn highlight_code(code: &str, extension: Option<&str>) -> Vec<StyledChar> {
 
     for line in LinesWithEndings::from(code) {
         let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap_or_default();
-        
+
         for (style, text) in ranges {
             let fg = style.foreground;
-            let color = Color::Rgb { r: fg.r, g: fg.g, b: fg.b };
-            
+            let color = Color::Rgb {
+                r: fg.r,
+                g: fg.g,
+                b: fg.b,
+            };
+
             for c in text.chars() {
                 match c {
                     '\n' => {
-                        result.push(StyledChar { char: '\r', color: Color::Reset });
-                        result.push(StyledChar { char: '\n', color: Color::Reset });
+                        result.push(StyledChar {
+                            char: '\r',
+                            color: Color::Reset,
+                        });
+                        result.push(StyledChar {
+                            char: '\n',
+                            color: Color::Reset,
+                        });
                     }
                     '\r' => { /* Skip, handled by \n */ }
                     '\t' => {
@@ -379,13 +392,17 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
     loop {
         let mut key_code = None;
         // Agent mode types faster/more consistently
-        let poll_interval = if agent_mode { Duration::from_millis(30) } else { Duration::from_millis(50) };
+        let poll_interval = if agent_mode {
+            Duration::from_millis(30)
+        } else {
+            Duration::from_millis(50)
+        };
 
         if event::poll(poll_interval)? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    key_code = Some(key.code);
-                }
+            if let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press
+            {
+                key_code = Some(key.code);
             }
         } else if agent_mode {
             // Auto-type tick (simulated keypress)
@@ -405,19 +422,19 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
                     chunk_size = chunk_size.saturating_sub(1).max(1);
                 }
                 KeyCode::F(1) => {
-                    if let Some(ref stream) = stream_opt {
-                        if enable_sound {
-                            play_result_sound(true, stream.mixer());
-                        }
+                    if let Some(ref stream) = stream_opt
+                        && enable_sound
+                    {
+                        play_result_sound(true, stream.mixer());
                     }
                     show_result_popup(&mut stdout, true)?;
                     index = 0; // Reset code
                 }
                 KeyCode::F(2) => {
-                    if let Some(ref stream) = stream_opt {
-                        if enable_sound {
-                            play_result_sound(false, stream.mixer());
-                        }
+                    if let Some(ref stream) = stream_opt
+                        && enable_sound
+                    {
+                        play_result_sound(false, stream.mixer());
                     }
                     show_result_popup(&mut stdout, false)?;
                     index = 0; // Reset code
@@ -517,7 +534,7 @@ fn play_type_sound(mixer: &rodio::mixer::Mixer) {
     let body = SineWave::new(150.0)
         .take_duration(Duration::from_millis(50))
         .amplify(0.10);
-    
+
     // "Click" component (Transient) - Short pink noise
     let click = Pink::new(48000)
         .take_duration(Duration::from_millis(15))
@@ -531,42 +548,66 @@ fn play_result_sound(success: bool, mixer: &rodio::mixer::Mixer) {
     if success {
         // Major chord arpeggio for success
         let vol = 0.15;
-        mixer.add(SineWave::new(523.25).take_duration(Duration::from_millis(200)).amplify(vol)); // C5
-        mixer.add(SineWave::new(659.25).take_duration(Duration::from_millis(200)).amplify(vol)); // E5
-        mixer.add(SineWave::new(783.99).take_duration(Duration::from_millis(200)).amplify(vol)); // G5
+        mixer.add(
+            SineWave::new(523.25)
+                .take_duration(Duration::from_millis(200))
+                .amplify(vol),
+        ); // C5
+        mixer.add(
+            SineWave::new(659.25)
+                .take_duration(Duration::from_millis(200))
+                .amplify(vol),
+        ); // E5
+        mixer.add(
+            SineWave::new(783.99)
+                .take_duration(Duration::from_millis(200))
+                .amplify(vol),
+        ); // G5
     } else {
         // Low dissonance for failure
         let vol = 0.30;
-        mixer.add(SineWave::new(110.0).take_duration(Duration::from_millis(600)).amplify(vol)); // A2
-        mixer.add(SineWave::new(116.54).take_duration(Duration::from_millis(500)).amplify(vol)); // A#2 (Clash)
+        mixer.add(
+            SineWave::new(110.0)
+                .take_duration(Duration::from_millis(600))
+                .amplify(vol),
+        ); // A2
+        mixer.add(
+            SineWave::new(116.54)
+                .take_duration(Duration::from_millis(500))
+                .amplify(vol),
+        ); // A#2 (Clash)
     }
 }
 
 fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
     let (cols, rows) = terminal::size()?;
-    let text = if success { " ACCESS GRANTED " } else { " ACCESS DENIED " };
+    let text = if success {
+        " ACCESS GRANTED "
+    } else {
+        " ACCESS DENIED "
+    };
     let color = if success { Color::Green } else { Color::Red };
-    
+
     let text_len = text.len() as u16;
     let start_x = (cols.saturating_sub(text_len)) / 2;
     let start_y = rows / 2;
-    
+
     // Simple flashing effect
     stdout.execute(terminal::Clear(ClearType::All))?;
     stdout.execute(cursor::Hide)?; // Temporarily hide during animation
-    
+
     for _ in 0..6 {
         stdout.execute(cursor::MoveTo(start_x, start_y))?;
         // Draw with reversed colors for "box" feel
         print!("{}", text.with(Color::Black).on(color).bold());
         stdout.flush()?;
         std::thread::sleep(Duration::from_millis(150));
-        
+
         stdout.execute(terminal::Clear(ClearType::All))?;
         stdout.flush()?;
         std::thread::sleep(Duration::from_millis(100));
     }
-    
+
     // Finally clear and prepare to respawn code
     stdout.execute(terminal::Clear(ClearType::All))?;
     stdout.execute(cursor::MoveTo(0, 0))?;
@@ -574,4 +615,3 @@ fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
     stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     Ok(())
 }
- 
