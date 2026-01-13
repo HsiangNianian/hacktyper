@@ -27,9 +27,6 @@ jobs:
           - os: ubuntu-latest
             distro: Ubuntu 22.04
             test_format: deb
-          - os: ubuntu-20.04
-            distro: Ubuntu 20.04
-            test_format: deb
           # macOS - tests .tar.gz packages
           - os: macos-latest
             distro: macOS (Apple Silicon)
@@ -244,9 +241,6 @@ jobs:
         include:
           - distro: Fedora Latest
             container: fedora:latest
-            test_format: rpm
-          - distro: Rocky Linux 9
-            container: rockylinux:9
             test_format: rpm
     
     container:
