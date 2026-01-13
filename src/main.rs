@@ -21,7 +21,6 @@ use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::LinesWithEndings;
 
-/// Hacker Typer: Ultimate Pranking Tool
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -559,3 +558,4 @@ fn show_result_popup(stdout: &mut io::Stdout, success: bool) -> Result<()> {
     stdout.execute(cursor::SetCursorStyle::BlinkingBlock)?;
     Ok(())
 }
+ 
