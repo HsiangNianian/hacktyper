@@ -1,0 +1,401 @@
+name: Test Installation Scripts
+
+on:
+  push:
+    branches: ["master", "main", "dev"]
+    paths:
+      - 'install.sh'
+      - 'install.ps1'
+      - '.github/workflows/test-install-scripts.yml'
+  pull_request:
+    branches: ["master", "main", "dev"]
+    paths:
+      - 'install.sh'
+      - 'install.ps1'
+      - '.github/workflows/test-install-scripts.yml'
+  workflow_dispatch:
+
+jobs:
+  test-unix-script:
+    name: Test install.sh on ${{ matrix.os }}${{ matrix.distro && format(' ({0})', matrix.distro) || '' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu (Debian-based) - tests .deb packages
+          - os: ubuntu-latest
+            distro: Ubuntu 22.04
+            test_format: deb
+          # macOS - tests .tar.gz packages
+          - os: macos-latest
+            distro: macOS (Apple Silicon)
+            test_format: tar.gz
+         
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display system information
+        run: |
+          echo "OS: ${{ matrix.distro }}"
+          echo "Architecture: $(uname -m)"
+          uname -a
+
+      - name: Test script syntax
+        run: |
+          bash -n install.sh
+          echo "✓ Bash script syntax is valid"
+
+      - name: Test OS detection
+        run: |
+          bash -c '
+          case "$(uname -s)" in
+              Linux*)
+                  echo "✓ Detected Linux"
+                  ;;
+              Darwin*)
+                  echo "✓ Detected macOS"
+                  ;;
+              *)
+                  echo "✗ Unsupported OS"
+                  exit 1
+                  ;;
+          esac
+          '
+
+      - name: Test architecture detection
+        run: |
+          ARCH=$(uname -m)
+          case "$ARCH" in
+              x86_64|amd64|aarch64|arm64|armv7l|armhf)
+                  echo "✓ Supported architecture: $ARCH"
+                  ;;
+              *)
+                  echo "✗ Unsupported architecture: $ARCH"
+                  exit 1
+                  ;;
+          esac
+
+      - name: Test URL construction
+        run: |
+          OS=""
+          case "$(uname -s)" in
+              Linux*) OS="linux" ;;
+              Darwin*) OS="macos" ;;
+          esac
+
+          ARCH=$(uname -m)
+          case "$ARCH" in
+              x86_64|amd64) ARCH="x86_64" ;;
+              aarch64|arm64) ARCH="aarch64" ;;
+              armv7l|armhf) ARCH="armv7hl" ;;
+          esac
+
+          VERSION="v0.2.6"
+          if [ "$OS" = "linux" ]; then
+              FILE="hacktyper-${OS}-${ARCH}.tar.gz"
+          elif [ "$OS" = "macos" ]; then
+              FILE="hacktyper-${OS}-${ARCH}.tar.gz"
+          fi
+
+          URL="https://github.com/HsiangNianian/hacktyper/releases/download/${VERSION}/${FILE}"
+          echo "Testing URL: $URL"
+
+          if curl -sSfI "$URL" > /dev/null 2>&1; then
+              echo "✓ Release file exists and is accessible"
+          else
+              echo "✗ Release file not found: $URL"
+              exit 1
+          fi
+
+      - name: Test jq availability (optional dependency)
+        run: |
+          if command -v jq &> /dev/null; then
+              echo "✓ jq is available"
+              jq --version
+          else
+              echo "ℹ jq not available, script will use grep/sed fallback"
+          fi
+
+      - name: Verify script has proper permissions
+        run: |
+          if [ -x install.sh ]; then
+              echo "✓ install.sh is executable"
+          else
+              echo "✗ install.sh is not executable"
+              exit 1
+          fi
+
+      - name: Test actual installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Testing actual installation of hacktyper..."
+          # Run the install script
+          bash install.sh
+          
+          # Verify hacktyper is installed and can run
+          if command -v hacktyper &> /dev/null; then
+              echo "✓ hacktyper command is available in PATH"
+              hacktyper -V
+          else
+              echo "✗ hacktyper command not found in PATH"
+              exit 1
+          fi
+
+  test-windows-script:
+    name: Test install.ps1 on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Display system information
+        run: |
+          Write-Host "OS: Windows"
+          Write-Host "Architecture: $env:PROCESSOR_ARCHITECTURE"
+          systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+
+      - name: Test PowerShell script syntax
+        run: |
+          Get-Command -Syntax .\install.ps1
+          Write-Host "✓ PowerShell script syntax is valid"
+
+      - name: Test architecture detection
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+          switch ($arch) {
+              "amd64" {
+                  Write-Host "✓ Supported architecture: x86_64"
+              }
+              "arm64" {
+                  Write-Host "✓ Supported architecture: aarch64"
+              }
+              default {
+                  Write-Host "✗ Unsupported architecture: $arch"
+                  exit 1
+              }
+          }
+
+      - name: Test URL construction
+        run: |
+          $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+          switch ($arch) {
+              "amd64" { $arch = "x86_64" }
+              "arm64" { $arch = "aarch64" }
+          }
+
+          $version = "v0.2.6"
+          $file = "hacktyper-windows-$arch.zip"
+          $url = "https://github.com/HsiangNianian/hacktyper/releases/download/$version/$file"
+
+          Write-Host "Testing URL: $url"
+
+          try {
+              $response = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -ErrorAction Stop
+              if ($response.StatusCode -eq 200) {
+                  Write-Host "✓ Release file exists and is accessible"
+              }
+          }
+          catch {
+              Write-Host "✗ Release file not found: $url"
+              exit 1
+          }
+
+      - name: Test PowerShell version
+        run: |
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+          if ($PSVersionTable.PSVersion.Major -ge 5) {
+              Write-Host "✓ PowerShell version is supported"
+          } else {
+              Write-Host "✗ PowerShell version is too old"
+              exit 1
+          }
+
+      - name: Test actual installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "Testing actual installation of hacktyper..."
+          # Run the install script
+          .\install.ps1
+          
+          # Verify hacktyper is installed and can run
+          if (Get-Command hacktyper -ErrorAction SilentlyContinue) {
+              Write-Host "✓ hacktyper command is available in PATH"
+              hacktyper -V
+          } else {
+              Write-Host "✗ hacktyper command not found in PATH"
+              exit 1
+          }
+
+  test-rpm-distros:
+    name: Test install.sh on ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: Fedora Latest
+            container: fedora:latest
+            test_format: rpm
+    
+    container:
+      image: ${{ matrix.container }}
+    
+    steps:
+      - name: Install Git and dependencies
+        run: |
+          if command -v dnf &> /dev/null; then
+              dnf install -y git tar
+              # Install curl, replacing curl-minimal if needed
+              dnf install -y curl --allowerasing
+          elif command -v yum &> /dev/null; then
+              yum install -y git tar
+              yum install -y curl --allowerasing
+          fi
+      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Display system information
+        run: |
+          echo "Distro: ${{ matrix.distro }}"
+          echo "Architecture: $(uname -m)"
+          cat /etc/os-release || true
+      
+      - name: Test script syntax
+        run: |
+          bash -n install.sh
+          echo "✓ Bash script syntax is valid"
+      
+      - name: Test actual installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Testing actual installation of hacktyper..."
+          # Run the install script
+          bash install.sh
+          
+          # Verify hacktyper is installed and can run
+          if command -v hacktyper &> /dev/null; then
+              echo "✓ hacktyper command is available in PATH"
+              hacktyper -V
+          else
+              echo "✗ hacktyper command not found in PATH"
+              exit 1
+          fi
+
+  test-script-structure:
+    name: Validate Script Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for required functions in install.sh
+        run: |
+          echo "Checking for required functions..."
+
+          required_functions=(
+            "detect_os"
+            "detect_arch"
+            "get_latest_version"
+            "download_release"
+            "install"
+            "verify_installation"
+          )
+
+          for func in "${required_functions[@]}"; do
+              if grep -q "^${func}()" install.sh || grep -q "^function ${func}" install.sh; then
+                  echo "✓ Found function: $func"
+              else
+                  echo "✗ Missing function: $func"
+                  exit 1
+              fi
+          done
+
+      - name: Check for error handling
+        run: |
+          if grep -q "set -e" install.sh; then
+              echo "✓ Script uses 'set -e' for error handling"
+          else
+              echo "ℹ Script does not use 'set -e'"
+          fi
+
+          if grep -q "error()" install.sh; then
+              echo "✓ Script has error() function"
+          else
+              echo "✗ Script missing error() function"
+              exit 1
+          fi
+
+      - name: Check for cleanup on exit
+        run: |
+          if grep -q "trap.*EXIT" install.sh; then
+              echo "✓ Script has cleanup trap"
+          else
+              echo "ℹ Script does not use cleanup trap"
+          fi
+
+      - name: Verify no hardcoded versions
+        run: |
+          if grep -q "get_latest_version" install.sh; then
+              echo "✓ Script fetches latest version dynamically"
+          else
+              echo "ℹ Script may have hardcoded version"
+          fi
+
+      - name: Check install.ps1 structure
+        run: |
+          echo "Checking PowerShell script structure..."
+
+          if grep -q "Get-Architecture" install.ps1; then
+              echo "✓ Found Get-Architecture function"
+          else
+              echo "✗ Missing Get-Architecture function"
+              exit 1
+          fi
+
+          if grep -q "Get-LatestVersion" install.ps1; then
+              echo "✓ Found Get-LatestVersion function"
+          else
+              echo "✗ Missing Get-LatestVersion function"
+              exit 1
+          fi
+
+          if grep -q "Install-Hacktyper" install.ps1; then
+              echo "✓ Found Install-Hacktyper function"
+          else
+              echo "✗ Missing Install-Hacktyper function"
+              exit 1
+          fi
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-unix-script, test-windows-script, test-rpm-distros, test-script-structure]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "Installation script tests completed"
+          echo "Unix script tests: ${{ needs.test-unix-script.result }}"
+          echo "Windows script tests: ${{ needs.test-windows-script.result }}"
+          echo "RPM distros tests: ${{ needs.test-rpm-distros.result }}"
+          echo "Structure validation: ${{ needs.test-script-structure.result }}"
+
+          if [ "${{ needs.test-unix-script.result }}" != "success" ] || \
+             [ "${{ needs.test-windows-script.result }}" != "success" ] || \
+             [ "${{ needs.test-rpm-distros.result }}" != "success" ] || \
+             [ "${{ needs.test-script-structure.result }}" != "success" ]; then
+              echo "❌ Some tests failed"
+              exit 1
+          else
+              echo "✅ All tests passed"
+          fi
