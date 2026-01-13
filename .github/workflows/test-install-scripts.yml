@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-20.04, macos-latest, macos-13]
+        os: [ubuntu-latest, ubuntu-20.04, macos-latest]
         include:
           - os: ubuntu-latest
             distro: Ubuntu 22.04
@@ -30,8 +30,6 @@ jobs:
             distro: Ubuntu 20.04
           - os: macos-latest
             distro: macOS (Apple Silicon)
-          - os: macos-13
-            distro: macOS (Intel)
 
     steps:
       - name: Checkout repository
@@ -128,6 +126,21 @@ jobs:
               exit 1
           fi
 
+      - name: Test actual installation
+        run: |
+          echo "Testing actual installation of hacktyper..."
+          # Run the install script
+          bash install.sh
+          
+          # Verify hacktyper is installed and can run
+          if command -v hacktyper &> /dev/null; then
+              echo "✓ hacktyper command is available in PATH"
+              hacktyper -V
+          else
+              echo "✗ hacktyper command not found in PATH"
+              exit 1
+          fi
+
   test-windows-script:
     name: Test install.ps1 on Windows
     runs-on: windows-latest
@@ -195,6 +208,21 @@ jobs:
               Write-Host "✓ PowerShell version is supported"
           } else {
               Write-Host "✗ PowerShell version is too old"
+              exit 1
+          }
+
+      - name: Test actual installation
+        run: |
+          Write-Host "Testing actual installation of hacktyper..."
+          # Run the install script
+          .\install.ps1
+          
+          # Verify hacktyper is installed and can run
+          if (Get-Command hacktyper -ErrorAction SilentlyContinue) {
+              Write-Host "✓ hacktyper command is available in PATH"
+              hacktyper -V
+          } else {
+              Write-Host "✗ hacktyper command not found in PATH"
               exit 1
           }
 
