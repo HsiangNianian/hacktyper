@@ -119,7 +119,13 @@ detect_distro() {
 # Get latest release version
 get_latest_version() {
     info "Fetching latest release version..."
-    LATEST_VERSION=$(curl -sSf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    # Try jq first for more reliable JSON parsing, fall back to grep/sed
+    if command -v jq &> /dev/null; then
+        LATEST_VERSION=$(curl -sSf "https://api.github.com/repos/$REPO/releases/latest" | jq -r .tag_name)
+    else
+        LATEST_VERSION=$(curl -sSf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    fi
     
     if [ -z "$LATEST_VERSION" ]; then
         error "Failed to fetch latest version"
@@ -193,8 +199,11 @@ install_deb() {
     info "Installing .deb package..."
     
     if command -v apt &> /dev/null; then
-        $SUDO apt install -y "$TEMP_DIR/$DOWNLOAD_FILE" || \
-        $SUDO dpkg -i "$TEMP_DIR/$DOWNLOAD_FILE" && $SUDO apt-get install -f -y
+        # Try apt install first, if it fails, use dpkg with dependency fix
+        if ! $SUDO apt install -y "$TEMP_DIR/$DOWNLOAD_FILE"; then
+            $SUDO dpkg -i "$TEMP_DIR/$DOWNLOAD_FILE"
+            $SUDO apt-get install -f -y
+        fi
     else
         $SUDO dpkg -i "$TEMP_DIR/$DOWNLOAD_FILE"
     fi

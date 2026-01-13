@@ -171,11 +171,7 @@ function Test-Installation {
             Write-Host "You can now run: hacktyper" -ForegroundColor Cyan
             
             # Check if it's in PATH
-            $inPath = $false
-            try {
-                $null = Get-Command hacktyper -ErrorAction SilentlyContinue
-                $inPath = $true
-            } catch {}
+            $inPath = $null -ne (Get-Command hacktyper -ErrorAction SilentlyContinue)
             
             if (-not $inPath) {
                 Write-Warn "If 'hacktyper' command is not found, restart your terminal or run:"

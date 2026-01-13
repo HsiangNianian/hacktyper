@@ -21,7 +21,7 @@ irm https://raw.githubusercontent.com/HsiangNianian/hacktyper/master/install.ps1
 The one-click install scripts support the following platforms:
 
 | OS | Architecture | Package Formats |
-|---|---|---|
+| --- | --- | --- |
 | Linux | x86_64 (amd64) | .deb, .rpm, .tar.gz |
 | Linux | aarch64 (arm64) | .deb, .rpm, .tar.gz |
 | Linux | armv7 (armhf/armv7hl) | .deb, .rpm, .tar.gz |
