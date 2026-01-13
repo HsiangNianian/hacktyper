@@ -31,4 +31,5 @@ crossterm = "0.29.0"
 rand = "0.9.2"
 rodio = { version = "0.21.1", features = ["noise"] }
 syntect = "5.3.0"
+toml = "0.9.11"
 which = "8.0.0"
