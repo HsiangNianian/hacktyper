@@ -374,14 +374,30 @@ fn run_ui(content: &[StyledChar], start_chunk_size: usize, enable_sound: bool) -
     let mut chunk_size = start_chunk_size;
     let max_len = content.len();
     let mut freestyle_mode = false;
+    let mut agent_mode = false;
 
     loop {
-        if event::poll(Duration::from_millis(50))?
-            && let Event::Key(key) = event::read()?
-            && key.kind == KeyEventKind::Press
-        {
-            match key.code {
+        let mut key_code = None;
+        // Agent mode types faster/more consistently
+        let poll_interval = if agent_mode { Duration::from_millis(30) } else { Duration::from_millis(50) };
+
+        if event::poll(poll_interval)? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    key_code = Some(key.code);
+                }
+            }
+        } else if agent_mode {
+            // Auto-type tick (simulated keypress)
+            key_code = Some(KeyCode::Null);
+        }
+
+        if let Some(code) = key_code {
+            match code {
                 KeyCode::Esc => break,
+                KeyCode::F(4) => {
+                    agent_mode = !agent_mode;
+                }
                 KeyCode::Up => {
                     chunk_size = chunk_size.saturating_add(1);
                 }
