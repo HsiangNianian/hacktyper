@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.7] - 2026-01-13
+### Bug Fixes
+- [`eb8cfcb`](https://github.com/HsiangNianian/hacktyper/commit/eb8cfcb5beb5c77481fd67b401fcf45392529344) - Update test-install-scripts.yml *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+- [`16f8b9f`](https://github.com/HsiangNianian/hacktyper/commit/16f8b9f4692cac50012412ddf40a918fea1abaee) - sync os list *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+### Chores
+- [`eaa4857`](https://github.com/HsiangNianian/hacktyper/commit/eaa48570136cc3655fb5ee1632739ad5131cabdd) - Bump version to 0.2.7 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
+
+
 ## [v0.2.6] - 2026-01-12
 ### Bug Fixes
 - [`51b51f4`](https://github.com/HsiangNianian/hacktyper/commit/51b51f4511da23943cbb8024611812df3b46b71a) - bump version to 0.2.6 in Cargo.toml and Cargo.lock *(commit by [@HsiangNianian](https://github.com/HsiangNianian))*
@@ -59,3 +68,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.4]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.3...v0.2.4
 [v0.2.5]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.4...v0.2.5
 [v0.2.6]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.5...v0.2.6
+[v0.2.7]: https://github.com/HsiangNianian/hacktyper/compare/v0.2.6...v0.2.7
