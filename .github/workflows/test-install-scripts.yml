@@ -34,9 +34,7 @@ jobs:
           - os: macos-latest
             distro: macOS (Apple Silicon)
             test_format: tar.gz
-          - os: macos-12
-            distro: macOS (Intel)
-            test_format: tar.gz
+         
 
     steps:
       - name: Checkout repository
