@@ -258,9 +258,12 @@ jobs:
       - name: Install Git and dependencies
         run: |
           if command -v dnf &> /dev/null; then
-              dnf install -y git curl tar
+              dnf install -y git tar
+              # Install curl, replacing curl-minimal if needed
+              dnf install -y curl --allowerasing
           elif command -v yum &> /dev/null; then
-              yum install -y git curl tar
+              yum install -y git tar
+              yum install -y curl --allowerasing
           fi
       
       - name: Checkout repository

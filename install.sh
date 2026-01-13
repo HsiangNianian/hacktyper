@@ -136,7 +136,8 @@ get_latest_version() {
     if command -v jq &> /dev/null; then
         LATEST_VERSION=$(curl "${curl_args[@]}" "https://api.github.com/repos/$REPO/releases/latest" | jq -r .tag_name)
     else
-        LATEST_VERSION=$(curl "${curl_args[@]}" "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        # Use grep -o to extract only the first tag_name field, then get its value
+        LATEST_VERSION=$(curl "${curl_args[@]}" "https://api.github.com/repos/$REPO/releases/latest" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed -E 's/.*"([^"]+)"$/\1/')
     fi
     
     if [ -z "$LATEST_VERSION" ]; then
