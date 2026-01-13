@@ -47,7 +47,18 @@ function Get-LatestVersion {
     Write-Info "Fetching latest release version..."
     
     try {
-        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$REPO/releases/latest"
+        # Set up headers for GitHub API
+        $headers = @{
+            "Accept" = "application/vnd.github+json"
+            "User-Agent" = "hacktyper-installer"
+        }
+        
+        # Use GitHub token if available (for CI environments)
+        if ($env:GITHUB_TOKEN) {
+            $headers["Authorization"] = "Bearer $env:GITHUB_TOKEN"
+        }
+        
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$REPO/releases/latest" -Headers $headers
         $version = $response.tag_name
         
         if ([string]::IsNullOrEmpty($version)) {

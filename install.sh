@@ -120,11 +120,23 @@ detect_distro() {
 get_latest_version() {
     info "Fetching latest release version..."
     
+    # Set up curl headers for GitHub API
+    local curl_args=(-sSf)
+    curl_args+=(-H "Accept: application/vnd.github+json")
+    
+    # Add User-Agent header to avoid rate limiting
+    curl_args+=(-H "User-Agent: hacktyper-installer")
+    
+    # Use GitHub token if available (for CI environments)
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        curl_args+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    fi
+    
     # Try jq first for more reliable JSON parsing, fall back to grep/sed
     if command -v jq &> /dev/null; then
-        LATEST_VERSION=$(curl -sSf "https://api.github.com/repos/$REPO/releases/latest" | jq -r .tag_name)
+        LATEST_VERSION=$(curl "${curl_args[@]}" "https://api.github.com/repos/$REPO/releases/latest" | jq -r .tag_name)
     else
-        LATEST_VERSION=$(curl -sSf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        LATEST_VERSION=$(curl "${curl_args[@]}" "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     fi
     
     if [ -z "$LATEST_VERSION" ]; then

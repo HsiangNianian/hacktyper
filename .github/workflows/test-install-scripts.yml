@@ -125,6 +125,8 @@ jobs:
           fi
 
       - name: Test actual installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Testing actual installation of hacktyper..."
           # Run the install script
@@ -210,6 +212,8 @@ jobs:
           }
 
       - name: Test actual installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "Testing actual installation of hacktyper..."
           # Run the install script
