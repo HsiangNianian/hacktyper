@@ -94,9 +94,9 @@ jobs:
           esac
 
           VERSION="v0.2.6"
-          if ["$OS" = "linux"]; then
+          if [ "$OS" = "linux" ]; then
               FILE="hacktyper-${OS}-${ARCH}.tar.gz"
-          elif ["$OS" = "macos"]; then
+          elif [ "$OS" = "macos" ]; then
               FILE="hacktyper-${OS}-${ARCH}.tar.gz"
           fi
 
