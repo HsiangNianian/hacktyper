@@ -11,6 +11,48 @@ A sophisticated CLI tool for pranking or acting like a Hollywood hacker.
 
 ## Installation
 
+### One-Click Install (Recommended)
+
+**Linux & macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/HsiangNianian/hacktyper/master/install.sh | bash
+```
+
+Or download and run:
+
+```bash
+wget https://raw.githubusercontent.com/HsiangNianian/hacktyper/master/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/HsiangNianian/hacktyper/master/install.ps1 | iex
+```
+
+Or download and run:
+
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/HsiangNianian/hacktyper/master/install.ps1 -OutFile install.ps1
+.\install.ps1
+```
+
+The install script automatically:
+- Detects your OS and architecture
+- Downloads the appropriate binary from the latest release
+- Installs using the best method for your system (.deb, .rpm, or .tar.gz for Linux)
+- Adds hacktyper to your PATH
+
+**Supported Platforms:**
+- Linux: x86_64, aarch64, armv7 (Debian/Ubuntu, RHEL/Fedora, and other distros)
+- macOS: x86_64 (Intel), aarch64 (Apple Silicon)
+- Windows: x86_64, aarch64 (WoA)
+
+### Alternative Installation Methods
+
 1. From crates.io
 
 ```bash
