@@ -11,21 +11,6 @@ A sophisticated CLI tool for pranking or acting like a Hollywood hacker.
 
 ## Installation
 
-### From AUR
-
-**Only for ArchLinux**
-
-```bash
-paru -Sy hacktyper
-# sudo pacman -S hacktyper
-```
-
-### From Crates.io
-
-```bash
-cargo install hacktyper
-```
-
 ### One-Click Install (Recommended)
 
 **Linux & macOS:**
@@ -55,16 +40,10 @@ Invoke-WebRequest -Uri https://raw.githubusercontent.com/HsiangNianian/hacktyper
 .\install.ps1
 ```
 
-The install script automatically:
-- Detects your OS and architecture
-- Downloads the appropriate binary from the latest release
-- Installs using the best method for your system (.deb, .rpm, or .tar.gz for Linux)
-- Adds hacktyper to your PATH
-
 #### Supported Platforms
 
 | OS | Architecture | Package Formats |
-| --- | --- | --- |
+| ------- | ----------------------- | ------------------- |
 | Linux | x86_64 (amd64) | .deb, .rpm, .tar.gz |
 | Linux | aarch64 (arm64) | .deb, .rpm, .tar.gz |
 | Linux | armv7 (armhf/armv7hl) | .deb, .rpm, .tar.gz |
@@ -80,8 +59,8 @@ If you prefer to install manually or the automatic script doesn't work for your 
 #### Download Pre-built Binaries
 
 1. Go to the [latest release](https://github.com/HsiangNianian/hacktyper/releases/latest)
-2. Download the appropriate file for your platform:
-   - **Linux x86_64**: 
+1. Download the appropriate file for your platform:
+   - **Linux x86_64**:
      - Debian/Ubuntu: `hacktyper-linux-amd64.deb`
      - RHEL/Fedora: `hacktyper-linux-x86_64.rpm`
      - Other: `hacktyper-linux-x86_64.tar.gz`
@@ -131,8 +110,8 @@ sudo chmod +x /usr/local/bin/hacktyper
 **Windows (.zip):**
 
 1. Extract the zip file
-2. Move `hacktyper.exe` to a directory in your PATH, or
-3. Add the directory containing `hacktyper.exe` to your PATH
+1. Move `hacktyper.exe` to a directory in your PATH, or
+1. Add the directory containing `hacktyper.exe` to your PATH
 
 ### Build from Source
 
@@ -150,6 +129,12 @@ cargo install hacktyper
 git clone https://github.com/HsiangNianian/hacktyper
 cd hacktyper
 cargo build --release
+```
+
+**From AUR:**
+
+```bash
+paru -Sy hacktyper
 ```
 
 The binary will be in `target/release/hacktyper`.
@@ -183,9 +168,10 @@ Then run the install script again.
 If `hacktyper` is not found after installation:
 
 1. **Linux/macOS**: Ensure `/usr/local/bin` is in your PATH
-2. **Windows**: Restart your terminal or run `refreshenv` (if using Chocolatey)
+1. **Windows**: Restart your terminal or run `refreshenv` (if using Chocolatey)
 
 You can verify your PATH with:
+
 - Linux/macOS: `echo $PATH`
 - Windows: `$env:PATH` (PowerShell) or `echo %PATH%` (CMD)
 
