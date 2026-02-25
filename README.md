@@ -11,6 +11,21 @@ A sophisticated CLI tool for pranking or acting like a Hollywood hacker.
 
 ## Installation
 
+### From AUR
+
+**Only for ArchLinux**
+
+```bash
+paru -Sy hacktyper
+# sudo pacman -S hacktyper
+```
+
+### From Crates.io
+
+```bash
+cargo install hacktyper
+```
+
 ### One-Click Install (Recommended)
 
 **Linux & macOS:**
